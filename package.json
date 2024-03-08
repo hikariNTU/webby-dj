@@ -1,5 +1,5 @@
 {
-  "name": "basic-react",
+  "name": "webby-dj",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -34,9 +34,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hikariNTU/basic-react"
+    "url": "https://github.com/hikariNTU/webby-dj"
   },
   "bugs": {
-    "url": "https://github.com/hikariNTU/basic-react/issues"
+    "url": "https://github.com/hikariNTU/webby-dj/issues"
   }
 }
