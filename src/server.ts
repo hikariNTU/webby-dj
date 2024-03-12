@@ -28,13 +28,7 @@ export type ClientSocket = Socket<ServerToClient, ClientToServer>;
 
 const io = new Server<ClientToServer, ServerToClient>();
 
-let statusHolder: undefined | PlayerStatus;
-
 io.on("connection", (socket) => {
-  if (statusHolder) {
-    socket.emit("status", statusHolder);
-  }
-
   socket.on("play", (name) => {
     io.sockets.emit("play", name);
   });
@@ -46,8 +40,7 @@ io.on("connection", (socket) => {
   socket.on("pause", () => io.sockets.emit("pause"));
 
   socket.on("status", (status) => {
-    statusHolder = status;
-    io.sockets.volatile.emit("status", status);
+    io.sockets.emit("status", status);
   });
 });
 

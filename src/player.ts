@@ -1,3 +1,4 @@
+import { uniqueId } from "lodash";
 import { ClientSocket } from "./server";
 
 type PlayingGroup = {
@@ -56,6 +57,7 @@ export class TrackPlayer {
     progress: number;
   };
   socket: ClientSocket;
+  id: string;
   constructor(socket: ClientSocket) {
     this.socket = socket;
     this.status = {
@@ -65,6 +67,7 @@ export class TrackPlayer {
       progress: 0,
       time: 0,
     };
+    this.id = uniqueId("player-");
     const audio = document.createElement("audio");
     audio.addEventListener("durationchange", () => {
       this.setStatus({
@@ -91,6 +94,11 @@ export class TrackPlayer {
       this.nextTrack();
     });
     this.audio = audio;
+
+    // clean up old binding socket for fast refresh new instance
+    socket.off("play");
+    socket.off("pause");
+    socket.off("stop");
     socket.on("play", (name) => this.setTrack(name));
     socket.on("pause", () => this.audio.pause());
     socket.on("stop", () => this.stop());
@@ -132,7 +140,7 @@ export class TrackPlayer {
   }
 
   remove() {
-    console.log("Removed");
+    this.stop();
     this.audio.remove();
   }
 

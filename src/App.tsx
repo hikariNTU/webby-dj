@@ -1,9 +1,18 @@
 import { useEffect, useState } from "react";
 import { SocketProvider, useSocket } from "./socket-provider";
-import { PlayerStatus, TrackPlayer, playList } from "./player";
+import { TrackPlayer, playList } from "./player";
 import { PauseIcon, PlayIcon, StopIcon } from "@radix-ui/react-icons";
-import { PlaylistPlayIcon, RemoteIcon, ServerIcon } from "./icons";
+import { PlaylistPlayIcon, RemoteIcon, SpeakerIcon } from "./icons";
 import clsx from "clsx";
+import { startCase } from "lodash";
+import { useAtom, useAtomValue } from "jotai";
+import {
+  durationAtom,
+  isPlayingAtom,
+  nameAtom,
+  progressAtom,
+  timeAtom,
+} from "./state";
 
 function formatSec(s: number) {
   const min = Math.floor(s / 60);
@@ -14,10 +23,10 @@ function formatSec(s: number) {
 function App() {
   return (
     <SocketProvider>
-      <div className="h-full pb-[72px]">
+      <div className="flex h-full flex-col items-start pb-[72px]">
         <TrackContainer />
-        <StatusBar />
       </div>
+      <StatusBar />
       <Player />
     </SocketProvider>
   );
@@ -25,41 +34,82 @@ function App() {
 
 function TrackContainer() {
   const socket = useSocket();
+  const playingName = useAtomValue(nameAtom);
+  const isPlaying = useAtomValue(isPlayingAtom);
 
   return (
-    <div className="flex h-full w-full min-w-0 items-start gap-4 overflow-auto p-6">
+    <div className="flex h-full w-full min-w-0 items-start gap-8 overflow-auto p-8">
       {playList.map((group) => {
+        const hasSelectedName = !!group.files.find(
+          (f) => f.name === playingName,
+        );
         return (
           <div
-            className="relative flex max-h-full w-[200px] shrink-0 flex-col rounded-xl bg-neutral-800 shadow-lg shadow-blue-300/10"
+            className={clsx(
+              "relative flex max-h-full w-[220px] shrink-0 flex-col overflow-hidden rounded-xl bg-neutral-800 outline outline-1 outline-neutral-700",
+            )}
             key={group.name}
           >
             <div className="flex items-center border-b border-neutral-700">
-              <h2 className="truncate px-3 py-3 text-lg font-semibold text-neutral-300">
-                {group.name}
-              </h2>
+              <div className="flex min-w-0 flex-col px-3 py-3">
+                <h2
+                  className={clsx("truncate text-lg", {
+                    "font-bold text-blue-400": hasSelectedName,
+                    "text-neutral-300": !hasSelectedName,
+                  })}
+                >
+                  {startCase(group.name)}
+                </h2>
+                <span className="text-xs text-neutral-500">
+                  {group.files.length} tracks
+                </span>
+              </div>
               <button
-                className="ml-auto mr-3 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neutral-700 text-white hover:bg-blue-500"
+                className="ml-auto mr-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-700 text-white hover:bg-blue-500"
                 onClick={() => socket?.emit("play", group.files[0].name)}
               >
                 <PlaylistPlayIcon fill="currentColor" />
               </button>
             </div>
-            <ol className="overflow-auto p-2">
+            <ol className="overflow-auto pb-3">
               {group.files.map((file, idx) => {
+                const isSelected = file.name === playingName;
+                const beenPlayed = isPlaying && isSelected;
                 return (
                   <li
-                    className="group flex items-center gap-2 rounded px-3 py-1 hover:bg-neutral-700"
+                    className={clsx(
+                      "group flex items-center gap-2 px-3 py-2 hover:bg-neutral-700",
+                    )}
                     key={file.name}
                   >
-                    <span>{String(idx + 1).padStart(2, "0")}. </span>
-                    <span className="truncate">{file.name}</span>
-                    <button
-                      className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neutral-700 text-white opacity-0 transition-opacity focus-within:opacity-100 hover:bg-blue-500 hover:opacity-100 group-hover:opacity-100"
-                      onClick={() => socket?.emit("play", file.name)}
+                    <div
+                      className={clsx("min-w-0", {
+                        "text-neutral-200": !beenPlayed,
+                        "text-blue-400": beenPlayed,
+                        "font-bold": isSelected,
+                      })}
                     >
-                      <PlayIcon />
-                    </button>
+                      <div className={clsx("flex items-center text-xs")}>
+                        <div>{String(idx + 1).padStart(2, "0")}.</div>
+                      </div>
+                      <div className="truncate">{file.name}</div>
+                    </div>
+                    {!beenPlayed && (
+                      <button
+                        className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-neutral-600 text-white hover:bg-neutral-900"
+                        onClick={() => socket?.emit("play", file.name)}
+                      >
+                        <PlayIcon />
+                      </button>
+                    )}
+                    {beenPlayed && (
+                      <SpeakerIcon
+                        fill="currentColor"
+                        className="ml-auto mr-1.5 shrink-0 text-blue-400"
+                        width={24}
+                        height={24}
+                      />
+                    )}
                   </li>
                 );
               })}
@@ -76,21 +126,20 @@ function Player() {
   const [player, setPlayer] = useState<TrackPlayer>();
 
   useEffect(() => {
-    if (socket && new URLSearchParams(window.location.search).has("server")) {
-      const instance = new TrackPlayer(socket);
-      setPlayer(instance);
+    if (player) {
       return () => {
-        instance.stop();
-        instance.remove();
+        player.remove();
       };
     }
-  }, [socket]);
+  }, [player]);
 
   useEffect(() => {
-    return () => {
-      player?.remove();
-    };
-  }, [player]);
+    if (socket && new URLSearchParams(window.location.search).has("server")) {
+      const p = new TrackPlayer(socket);
+      setPlayer(p);
+      window.document.title = "(Server) Webby DJ";
+    }
+  }, [socket]);
 
   return (
     <div
@@ -103,7 +152,7 @@ function Player() {
       )}
     >
       {player ? (
-        <ServerIcon fill="currentColor" />
+        <SpeakerIcon fill="currentColor" />
       ) : (
         <RemoteIcon fill="currentColor" />
       )}
@@ -113,19 +162,26 @@ function Player() {
 
 function StatusBar() {
   const socket = useSocket();
-  const [status, setStatus] = useState<PlayerStatus>();
+  const [duration, setDuration] = useAtom(durationAtom);
+  const [time, setTime] = useAtom(timeAtom);
+  const [name, setName] = useAtom(nameAtom);
+  const [isPlaying, setIsPlaying] = useAtom(isPlayingAtom);
+  const progress = useAtomValue(progressAtom);
 
   useEffect(() => {
     if (!socket) {
       return;
     }
     socket.on("status", (status) => {
-      setStatus(status);
+      setDuration(status.duration);
+      setTime(status.time);
+      setName(status.name);
+      setIsPlaying(status.playing);
     });
     return () => {
       socket.off("status");
     };
-  }, [socket]);
+  }, [setDuration, setIsPlaying, setName, setTime, socket]);
 
   return (
     <div className="fixed bottom-0 flex h-[72px] w-full min-w-0 items-center gap-2 whitespace-nowrap bg-neutral-800 px-4 pt-0.5">
@@ -133,13 +189,13 @@ function StatusBar() {
         <div
           className="absolute inset-0 bg-blue-600 transition-transform duration-500 ease-linear"
           style={{
-            transform: `translateX(-${(1 - (status?.progress || 0)) * 100}%)`,
+            transform: `translateX(-${(1 - (progress || 0)) * 100}%)`,
           }}
         ></div>
       </div>
 
       <div className="flex items-center gap-2">
-        {status?.playing ? (
+        {isPlaying ? (
           <button
             className="rounded-full bg-neutral-700 p-4 hover:bg-neutral-900"
             onClick={() => socket?.emit("pause")}
@@ -150,7 +206,7 @@ function StatusBar() {
           <button
             className="rounded-full bg-neutral-700 p-4 hover:bg-neutral-900"
             onClick={() =>
-              socket?.emit("play", status?.name || playList[0].files[0].name)
+              socket?.emit("play", name || playList[0].files[0].name)
             }
           >
             <PlayIcon width={20} height={20} />
@@ -165,14 +221,11 @@ function StatusBar() {
       </div>
 
       <div className="ml-auto truncate text-lg font-semibold">
-        {status?.name || "無歌曲"}
+        {name || "無歌曲"}
       </div>
       <div className="text-xs">
-        {formatSec(status?.time || 0)}{" "}
-        <span className="text-neutral-400">
-          {" "}
-          / {formatSec(status?.duration || 0)}
-        </span>
+        {formatSec(time)}{" "}
+        <span className="text-neutral-400"> / {formatSec(duration)}</span>
       </div>
     </div>
   );
