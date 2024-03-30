@@ -28,6 +28,7 @@ function App() {
       </div>
       <StatusBar />
       <Player />
+      <IPAddress />
     </SocketProvider>
   );
 }
@@ -227,6 +228,25 @@ function StatusBar() {
         {formatSec(time)}{" "}
         <span className="text-neutral-400"> / {formatSec(duration)}</span>
       </div>
+    </div>
+  );
+}
+
+function IPAddress() {
+  const [ips, setIps] = useState<string[]>([]);
+  const socket = useSocket();
+  useEffect(() => {
+    socket?.on("resIp", (data) => setIps(data));
+    socket?.emit("askIp");
+
+    return () => {
+      socket?.off("resIp");
+    };
+  }, [socket]);
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-neutral-900/80 backdrop-blur">
+      <pre>{ips.join("\n")}</pre>
     </div>
   );
 }

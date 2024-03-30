@@ -1,3 +1,4 @@
+import os from "node:os";
 import { Server } from "socket.io";
 import { Socket } from "socket.io-client";
 
@@ -10,10 +11,13 @@ interface ShareEvent {
   status: (status: PlayerStatus) => void;
 }
 
-interface ServerToClient extends ShareEvent {}
+interface ServerToClient extends ShareEvent {
+  resIp: (ip: string[]) => void;
+}
 
 interface ClientToServer extends ShareEvent {
   hello: (cb: Ack<string>) => void;
+  askIp: () => void;
 }
 
 type PlayerStatus = {
@@ -28,20 +32,44 @@ export type ClientSocket = Socket<ServerToClient, ClientToServer>;
 
 const io = new Server<ClientToServer, ServerToClient>();
 
-io.on("connection", (socket) => {
-  socket.on("play", (name) => {
+io.on("connection", (currentSocket) => {
+  currentSocket.on("play", (name) => {
     io.sockets.emit("play", name);
   });
 
-  socket.on("stop", () => {
+  currentSocket.on("stop", () => {
     io.sockets.emit("stop");
   });
 
-  socket.on("pause", () => io.sockets.emit("pause"));
+  currentSocket.on("pause", () => io.sockets.emit("pause"));
 
-  socket.on("status", (status) => {
+  currentSocket.on("status", (status) => {
     io.sockets.emit("status", status);
+  });
+
+  currentSocket.on("askIp", () => {
+    currentSocket.emit("resIp", getCurrentIp());
   });
 });
 
 io.listen(4000);
+
+function getCurrentIp() {
+  const nets = os.networkInterfaces();
+  const results: string[] = [];
+
+  for (const interfaces of Object.values(nets)) {
+    if (!interfaces) {
+      continue;
+    }
+    for (const net of interfaces) {
+      // Skip over non-IPv4 and internal (i.e. 127.0.0.1) addresses
+      // 'IPv4' is in Node <= 17, from 18 it's a number 4 or 6
+      const familyV4Value = typeof net.family === "string" ? "IPv4" : 4;
+      if (net.family === familyV4Value && !net.internal) {
+        results.push(net.address);
+      }
+    }
+  }
+  return results;
+}
