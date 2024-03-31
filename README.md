@@ -1,30 +1,30 @@
-# React + TypeScript + Vite
+# Webby DJ
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A project that let you play the music list and remotely controlled by your mobile.
 
-Currently, two official plugins are available:
+## Requirement
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Node JS 16+.
+- The playing device should connect to same Wifi as the controller devices.
+- Put some songs in the format of `/src/tracks/{your-playlist-name}/`, there's a sample `ai.mp3` file in `samples/` folder.
 
-## Expanding the ESLint configuration
+## Start / Development
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+Run following commands:
 
-- Configure the top-level `parserOptions` property like this:
+```
+npm install
+npm run start -- -y # this is going to npx the concurrently
 
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
+# or
+# npm run dev-server # for socket io server
+# npm run dev # for frontend and player server
 ```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+Then open `http://localhost:8888/?server` on the server.
+
+There should be a little QR Code icon floating on the top right corner, click it and it will show the current IP adrress and URL to connect with.
+
+Play the music on the device first, this step is required because browser is not supposed to play music before any user interaction.
+
+The controllers can now navigate to the URL, and control the music playback remotely.
