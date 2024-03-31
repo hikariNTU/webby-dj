@@ -1,12 +1,7 @@
 import { useEffect, useState } from "react";
 import { SocketProvider, useSocket } from "./socket-provider";
 import { TrackPlayer, playList } from "./player";
-import {
-  Link1Icon,
-  PauseIcon,
-  PlayIcon,
-  StopIcon,
-} from "@radix-ui/react-icons";
+import { PauseIcon, PlayIcon, StopIcon } from "@radix-ui/react-icons";
 import { PlaylistPlayIcon, RemoteIcon, SpeakerIcon } from "./icons";
 import clsx from "clsx";
 import { startCase } from "lodash";
@@ -18,6 +13,7 @@ import {
   progressAtom,
   timeAtom,
 } from "./state";
+import { QRCodeShowBtn } from "./QRCode";
 
 function formatSec(s: number) {
   const min = Math.floor(s / 60);
@@ -33,7 +29,7 @@ function App() {
       </div>
       <StatusBar />
       <Player />
-      <IPAddress />
+      <QRCodeShowBtn />
     </SocketProvider>
   );
 }
@@ -72,7 +68,7 @@ function TrackContainer() {
               </div>
               <button
                 className="ml-auto mr-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-700 text-white hover:bg-blue-500"
-                onClick={() => socket?.emit("play", group.files[0].name)}
+                onClick={() => socket?.emit("playGroup", group.name)}
               >
                 <PlaylistPlayIcon fill="currentColor" />
               </button>
@@ -130,6 +126,7 @@ function TrackContainer() {
 function Player() {
   const socket = useSocket();
   const [player, setPlayer] = useState<TrackPlayer>();
+  const [connected, setConnected] = useState(false);
 
   useEffect(() => {
     if (player) {
@@ -143,7 +140,18 @@ function Player() {
     if (socket && new URLSearchParams(window.location.search).has("server")) {
       const p = new TrackPlayer(socket);
       setPlayer(p);
+      socket.on("connect", () => {
+        setConnected(socket.connected);
+      });
+      socket.on("disconnect", () => {
+        setConnected(socket.connected);
+      });
       window.document.title = "(Server) Webby DJ";
+
+      return () => {
+        socket.off("connect");
+        socket.off("disconnect");
+      };
     }
   }, [socket]);
 
@@ -154,6 +162,7 @@ function Player() {
         {
           "bg-green-500 text-green-900": !player,
           "bg-orange-500 text-orange-100": player,
+          "!bg-neutral-400": !connected,
         },
       )}
     >
@@ -234,43 +243,6 @@ function StatusBar() {
         <span className="text-neutral-400"> / {formatSec(duration)}</span>
       </div>
     </div>
-  );
-}
-
-function IPAddress() {
-  const [open, setOpen] = useState(false);
-  const [ips, setIps] = useState<string[]>([]);
-  const socket = useSocket();
-  useEffect(() => {
-    socket?.on("resIp", (data) => setIps(data));
-    return () => {
-      socket?.off("resIp");
-    };
-  }, [socket]);
-
-  return (
-    <>
-      <button
-        className="fixed right-2 top-12 z-50 rounded-xl bg-neutral-200/20 p-2"
-        onClick={() => {
-          setOpen((o) => {
-            if (!o) {
-              socket?.emit("askIp");
-              return true;
-            } else {
-              return false;
-            }
-          });
-        }}
-      >
-        <Link1Icon />
-      </button>
-      {open && (
-        <div className="fixed inset-0 flex items-center justify-center bg-neutral-900/80 backdrop-blur">
-          <pre>{ips.map((v) => v + ":8888").join("\n")}</pre>
-        </div>
-      )}
-    </>
   );
 }
 

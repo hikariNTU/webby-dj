@@ -5,6 +5,7 @@
   "type": "module",
   "author": "hikariNTU",
   "scripts": {
+    "start": "npx concurrently \"npm run dev-server\" \"npm run dev\"",
     "dev": "vite --host",
     "build": "tsc && vite build",
     "dev-server": "npx tsx --watch ./src/server.ts",
@@ -17,11 +18,13 @@
     "clsx": "^2.1.0",
     "jotai": "^2.7.0",
     "lodash": "^4.17.21",
+    "qrcode": "^1.5.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "socket.io-client": "^4.7.4"
   },
   "devDependencies": {
+    "@types/qrcode": "^1.5.5",
     "@types/react": "^18.2.56",
     "@types/react-dom": "^18.2.19",
     "@typescript-eslint/eslint-plugin": "^7.0.2",

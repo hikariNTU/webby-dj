@@ -6,6 +6,7 @@ type Ack<Payload = unknown> = (data: Payload) => void;
 
 interface ShareEvent {
   play: (name: string) => void;
+  playGroup: (name: string) => void;
   pause: () => void;
   stop: () => void;
   status: (status: PlayerStatus) => void;
@@ -35,6 +36,10 @@ const io = new Server<ClientToServer, ServerToClient>();
 io.on("connection", (currentSocket) => {
   currentSocket.on("play", (name) => {
     io.sockets.emit("play", name);
+  });
+
+  currentSocket.on("playGroup", (name) => {
+    io.sockets.emit("playGroup", name);
   });
 
   currentSocket.on("stop", () => {

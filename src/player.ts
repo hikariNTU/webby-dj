@@ -100,6 +100,7 @@ export class TrackPlayer {
     socket.off("pause");
     socket.off("stop");
     socket.on("play", (name) => this.setTrack(name));
+    socket.on("playGroup", (name) => this.playGroup(name));
     socket.on("pause", () => this.audio.pause());
     socket.on("stop", () => this.stop());
   }
@@ -107,6 +108,20 @@ export class TrackPlayer {
   setStatus(payload: Partial<PlayerStatus>) {
     Object.assign(this.status, payload);
     this.socket.volatile.emit("status", this.status);
+  }
+
+  playGroup(name: string) {
+    const list = playList.find((list) => list.name === name);
+    if (!list) {
+      return;
+    }
+    const isSameGroup = !!list.files.find(
+      (file) => file.name === this.status.name,
+    );
+    if (isSameGroup) {
+      return;
+    }
+    this.setTrack(list.files[0].name);
   }
 
   setTrack(name: string) {
