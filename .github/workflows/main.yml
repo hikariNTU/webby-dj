@@ -11,6 +11,19 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
       - run: npm ci
+      - name: copy sample songs
+        run: |
+          mkdir src/tracks
+          mkdir src/tracks/welcome
+          mkdir src/tracks/intro
+          mkdir src/tracks/ending
+          cp samples/ai.mp3 src/welcome/i-love-you.mp3
+          cp samples/ai.mp3 src/welcome/never-gonna-give-you-up.mp3
+          cp samples/ai.mp3 src/welcome/wedding-progress.mp3
+          cp samples/ai.mp3 src/welcome/one-thousand-years.mp3
+          cp samples/ai.mp3 src/welcome/new-time-ok.mp3
+          cp samples/ai.mp3 src/welcome/hello.mp3
+          cp samples/ai.mp3 src/welcome/goodbye-kiss.mp3
       - run: npm run build
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
