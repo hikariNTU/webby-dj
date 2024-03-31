@@ -5,7 +5,7 @@
   "type": "module",
   "author": "hikariNTU",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "tsc && vite build",
     "dev-server": "npx tsx --watch ./src/server.ts",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",

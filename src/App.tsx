@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { SocketProvider, useSocket } from "./socket-provider";
 import { TrackPlayer, playList } from "./player";
-import { PauseIcon, PlayIcon, StopIcon } from "@radix-ui/react-icons";
+import {
+  Link1Icon,
+  PauseIcon,
+  PlayIcon,
+  StopIcon,
+} from "@radix-ui/react-icons";
 import { PlaylistPlayIcon, RemoteIcon, SpeakerIcon } from "./icons";
 import clsx from "clsx";
 import { startCase } from "lodash";
@@ -233,21 +238,39 @@ function StatusBar() {
 }
 
 function IPAddress() {
+  const [open, setOpen] = useState(false);
   const [ips, setIps] = useState<string[]>([]);
   const socket = useSocket();
   useEffect(() => {
     socket?.on("resIp", (data) => setIps(data));
-    socket?.emit("askIp");
-
     return () => {
       socket?.off("resIp");
     };
   }, [socket]);
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-neutral-900/80 backdrop-blur">
-      <pre>{ips.join("\n")}</pre>
-    </div>
+    <>
+      <button
+        className="fixed right-2 top-12 z-50 rounded-xl bg-neutral-200/20 p-2"
+        onClick={() => {
+          setOpen((o) => {
+            if (!o) {
+              socket?.emit("askIp");
+              return true;
+            } else {
+              return false;
+            }
+          });
+        }}
+      >
+        <Link1Icon />
+      </button>
+      {open && (
+        <div className="fixed inset-0 flex items-center justify-center bg-neutral-900/80 backdrop-blur">
+          <pre>{ips.map((v) => v + ":8888").join("\n")}</pre>
+        </div>
+      )}
+    </>
   );
 }
 
