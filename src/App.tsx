@@ -260,7 +260,7 @@ function StatusBar() {
       <VolumeControl />
       <div className="ml-auto flex min-w-0 flex-shrink items-center max-sm:flex-col max-sm:items-end sm:gap-2">
         <div className="max-w-full truncate text-lg font-semibold">
-          {name || "無歌曲min-w-0 truncate text-lg font-semibold"}
+          {name || "無歌曲"}
         </div>
         <div className="text-xs">
           {formatSec(time)}{" "}
