@@ -90,8 +90,10 @@ export class TrackPlayer {
 
     // clean up old binding socket for fast refresh new instance
     socket.off("play");
+    socket.off("playGroup");
     socket.off("pause");
     socket.off("stop");
+    socket.off("setVolume");
     socket.on("play", (name) => this.setTrack(name));
     socket.on("playGroup", (name) => this.playGroup(name));
     socket.on("pause", () => this.audio.pause());
