@@ -1,5 +1,6 @@
 import { uniqueId } from "lodash";
 import { ClientSocket } from "./server";
+import { PlayerStatus } from "./server";
 
 type PlayingGroup = {
   name: string;
@@ -7,14 +8,6 @@ type PlayingGroup = {
 };
 
 type AllList = PlayingGroup[];
-
-export type PlayerStatus = {
-  name: string;
-  playing: boolean;
-  duration: number;
-  time: number;
-  progress: number;
-};
 
 const files = import.meta.glob("./tracks/*/*.*", {
   query: "url",
@@ -49,13 +42,7 @@ for (const [path, url] of Object.entries(files)) {
 
 export class TrackPlayer {
   audio: HTMLAudioElement;
-  status: {
-    name: string;
-    playing: boolean;
-    duration: number;
-    time: number;
-    progress: number;
-  };
+  status: PlayerStatus;
   socket: ClientSocket;
   id: string;
   constructor(socket: ClientSocket) {
@@ -66,6 +53,7 @@ export class TrackPlayer {
       playing: false,
       progress: 0,
       time: 0,
+      volume: 1,
     };
     this.id = uniqueId("player-");
     const audio = document.createElement("audio");
@@ -93,6 +81,11 @@ export class TrackPlayer {
     audio.addEventListener("ended", () => {
       this.nextTrack();
     });
+    audio.addEventListener("volumechange", () => {
+      this.setStatus({
+        volume: audio.volume,
+      });
+    });
     this.audio = audio;
 
     // clean up old binding socket for fast refresh new instance
@@ -103,6 +96,9 @@ export class TrackPlayer {
     socket.on("playGroup", (name) => this.playGroup(name));
     socket.on("pause", () => this.audio.pause());
     socket.on("stop", () => this.stop());
+    socket.on("setVolume", (vol) => {
+      this.audio.volume = vol;
+    });
   }
 
   setStatus(payload: Partial<PlayerStatus>) {

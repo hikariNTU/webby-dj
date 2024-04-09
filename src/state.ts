@@ -7,3 +7,4 @@ export const isPlayingAtom = atom(false);
 export const progressAtom = atom((get) => {
   return get(timeAtom) / (get(durationAtom) || 1);
 });
+export const volumeAtom = atom(1);

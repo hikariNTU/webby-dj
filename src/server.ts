@@ -4,12 +4,22 @@ import { Socket } from "socket.io-client";
 
 type Ack<Payload = unknown> = (data: Payload) => void;
 
+export type PlayerStatus = {
+  name: string;
+  playing: boolean;
+  duration: number;
+  time: number;
+  progress: number;
+  volume: number;
+};
+
 interface ShareEvent {
   play: (name: string) => void;
   playGroup: (name: string) => void;
   pause: () => void;
   stop: () => void;
   status: (status: PlayerStatus) => void;
+  setVolume: (vol: PlayerStatus["volume"]) => void;
 }
 
 interface ServerToClient extends ShareEvent {
@@ -20,14 +30,6 @@ interface ClientToServer extends ShareEvent {
   hello: (cb: Ack<string>) => void;
   askIp: () => void;
 }
-
-type PlayerStatus = {
-  name: string;
-  playing: boolean;
-  duration: number;
-  time: number;
-  progress: number;
-};
 
 export type ClientSocket = Socket<ServerToClient, ClientToServer>;
 
@@ -44,6 +46,10 @@ io.on("connection", (currentSocket) => {
 
   currentSocket.on("stop", () => {
     io.sockets.emit("stop");
+  });
+
+  currentSocket.on("setVolume", (vol) => {
+    io.sockets.emit("setVolume", vol);
   });
 
   currentSocket.on("pause", () => io.sockets.emit("pause"));

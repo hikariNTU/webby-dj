@@ -1,19 +1,39 @@
-import { useEffect, useState } from "react";
-import { SocketProvider, useSocket } from "./socket-provider";
-import { TrackPlayer, playList } from "./player";
 import { PauseIcon, PlayIcon, StopIcon } from "@radix-ui/react-icons";
-import { PlaylistPlayIcon, RemoteIcon, SpeakerIcon } from "./icons";
+import {
+  Popover,
+  PopoverArrow,
+  PopoverContent,
+  PopoverPortal,
+  PopoverTrigger,
+} from "@radix-ui/react-popover";
+import {
+  Slider,
+  SliderRange,
+  SliderThumb,
+  SliderTrack,
+} from "@radix-ui/react-slider";
 import clsx from "clsx";
-import { startCase } from "lodash";
 import { useAtom, useAtomValue } from "jotai";
+import { startCase } from "lodash";
+import { useEffect, useState } from "react";
+import { QRCodeShowBtn } from "./QRCode";
+import {
+  PlaylistPlayIcon,
+  RemoteIcon,
+  SpeakerIcon,
+  VolumeDown,
+  VolumeUp,
+} from "./icons";
+import { TrackPlayer, playList } from "./player";
+import { SocketProvider, useSocket } from "./socket-provider";
 import {
   durationAtom,
   isPlayingAtom,
   nameAtom,
   progressAtom,
   timeAtom,
+  volumeAtom,
 } from "./state";
-import { QRCodeShowBtn } from "./QRCode";
 
 function formatSec(s: number) {
   const min = Math.floor(s / 60);
@@ -181,6 +201,7 @@ function StatusBar() {
   const [time, setTime] = useAtom(timeAtom);
   const [name, setName] = useAtom(nameAtom);
   const [isPlaying, setIsPlaying] = useAtom(isPlayingAtom);
+  const [, setVolume] = useAtom(volumeAtom);
   const progress = useAtomValue(progressAtom);
 
   useEffect(() => {
@@ -192,17 +213,18 @@ function StatusBar() {
       setTime(status.time);
       setName(status.name);
       setIsPlaying(status.playing);
+      setVolume(status.volume);
     });
     return () => {
       socket.off("status");
     };
-  }, [setDuration, setIsPlaying, setName, setTime, socket]);
+  }, [setDuration, setIsPlaying, setName, setTime, setVolume, socket]);
 
   return (
     <div className="fixed bottom-0 flex h-[72px] w-full min-w-0 items-center gap-2 whitespace-nowrap bg-neutral-800 px-4 pt-0.5">
       <div className="absolute inset-x-0 top-0 h-0.5 bg-neutral-600">
         <div
-          className="absolute inset-0 bg-blue-600 transition-transform duration-500 ease-linear"
+          className="absolute inset-0 bg-blue-600"
           style={{
             transform: `translateX(-${(1 - (progress || 0)) * 100}%)`,
           }}
@@ -235,14 +257,72 @@ function StatusBar() {
         </button>
       </div>
 
-      <div className="ml-auto truncate text-lg font-semibold">
-        {name || "無歌曲"}
-      </div>
-      <div className="text-xs">
-        {formatSec(time)}{" "}
-        <span className="text-neutral-400"> / {formatSec(duration)}</span>
+      <VolumeControl />
+      <div className="ml-auto flex min-w-0 flex-shrink items-center max-sm:flex-col max-sm:items-end sm:gap-2">
+        <div className="max-w-full truncate text-lg font-semibold">
+          {name || "無歌曲min-w-0 truncate text-lg font-semibold"}
+        </div>
+        <div className="text-xs">
+          {formatSec(time)}{" "}
+          <span className="text-neutral-400">/ {formatSec(duration)}</span>
+        </div>
       </div>
     </div>
+  );
+}
+
+function VolumeControl() {
+  const socket = useSocket();
+  const volume = useAtomValue(volumeAtom);
+  function setVolume(vol: number) {
+    socket?.emit("setVolume", vol);
+  }
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button className="flex shrink-0 items-center justify-center gap-1 rounded-full bg-neutral-800 p-2 text-neutral-50 hover:bg-neutral-900 disabled:bg-neutral-800/30 disabled:opacity-50">
+          {volume > 0.5 ? (
+            <VolumeUp fill="currentColor" className="text-[24px]" />
+          ) : (
+            <VolumeDown fill="currentColor" className="text-[24px]" />
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverPortal>
+        <PopoverContent
+          sideOffset={5}
+          align="center"
+          className="z-20 flex h-[220px] flex-col items-center gap-2 rounded-full bg-neutral-900 p-6 pb-2 text-neutral-200"
+        >
+          <Slider
+            orientation="vertical"
+            className="relative flex h-full w-4 cursor-pointer touch-none select-none flex-col items-center"
+            value={[volume]}
+            min={0}
+            max={1}
+            step={0.05}
+            onValueChange={(v) => {
+              setVolume(v[0]);
+            }}
+            onValueCommit={(v) => {
+              setVolume(v[0]);
+            }}
+          >
+            <SliderTrack className="relative w-1 grow rounded bg-neutral-600">
+              <SliderRange className="absolute w-full rounded bg-blue-600" />
+            </SliderTrack>
+            <SliderThumb
+              className="block h-3 w-3 cursor-grab rounded-full border border-blue-600 bg-white hover:ring-2 focus:outline-none focus:ring-2 active:cursor-grabbing"
+              aria-label="Volume level"
+            />
+          </Slider>
+          <span className="w-[20px] text-center text-xs text-neutral-500">
+            {Math.round(volume * 100)}
+          </span>
+          <PopoverArrow />
+        </PopoverContent>
+      </PopoverPortal>
+    </Popover>
   );
 }
 
